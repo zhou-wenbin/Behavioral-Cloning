@@ -1,125 +1,183 @@
-# Behavioral Cloning Project
+# **Behavioral Cloning** 
 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+## Writeup
 
-Overview
+### This writeup serves as the explanation of how I successfully run the car in autonomous mode within one loop without accident.
+
 ---
-This repository contains starting files for the Behavioral Cloning Project.
 
-In this project, you will use what you've learned about deep neural networks and convolutional neural networks to clone driving behavior. You will train, validate and test a model using Keras. The model will output a steering angle to an autonomous vehicle.
+**Behavioral Cloning Project**
 
-We have provided a simulator where you can steer a car around a track for data collection. You'll use image data and steering angles to train a neural network and then use this model to drive the car autonomously around the track.
-
-We also want you to create a detailed writeup of the project. Check out the [writeup template](https://github.com/udacity/CarND-Behavioral-Cloning-P3/blob/master/writeup_template.md) for this project and use it as a starting point for creating your own writeup. The writeup can be either a markdown file or a pdf document.
-
-To meet specifications, the project will require submitting five files: 
-* model.py (script used to create and train the model)
-* drive.py (script to drive the car - feel free to modify this file)
-* model.h5 (a trained Keras model)
-* a report writeup file (either markdown or pdf)
-* video.mp4 (a video recording of your vehicle driving autonomously around the track for at least one full lap)
-
-This README file describes how to output the video in the "Details About Files In This Directory" section.
-
-Creating a Great Writeup
----
-A great writeup should include the [rubric points](https://review.udacity.com/#!/rubrics/432/view) as well as your description of how you addressed each point.  You should include a detailed description of the code used (with line-number references and code snippets where necessary), and links to other supporting documents or external references.  You should include images in your writeup to demonstrate how your code works with examples.  
-
-All that said, please be concise!  We're not looking for you to write a book here, just a brief description of how you passed each rubric point, and references to the relevant code :). 
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup.
-
-The Project
----
 The goals / steps of this project are the following:
-* Use the simulator to collect data of good driving behavior 
-* Design, train and validate a model that predicts a steering angle from image data
-* Use the model to drive the vehicle autonomously around the first track in the simulator. The vehicle should remain on the road for an entire loop around the track.
+
+* Use the simulator to collect data of good driving behavior
+* Build, a convolution neural network in Keras that predicts steering angles from images
+* Train and validate the model with a training and validation set
+* Test that the model successfully drives around track one without leaving the road
 * Summarize the results with a written report
 
-### Dependencies
-This lab requires:
 
-* [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit)
+[//]: # (Image References)
 
-The lab enviroment can be created with CarND Term1 Starter Kit. Click [here](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) for the details.
+[image1]: ./output_images/histogram_origin.png
+[image2]: ./output_images/left.png
+[image3]: ./output_images/center.png
+[image4]: ./output_images/right.png
+[image5]: ./output_images/center_crop.png
+[image6]: ./output_images/crop.png
+[image7]: ./output_images/corner_resize.png
+[image8]: ./output_images/origin.png
+[image9]: ./output_images/corner_yuv.png
+[image10]: ./output_images/flip.png
+[image11]: ./output_images/his_blance.png
+[image12]: ./output_images/his.png
 
-The following resources can be found in this github repository:
-* drive.py
-* video.py
-* writeup_template.md
 
-The simulator can be downloaded from the classroom. In the classroom, we have also provided sample data that you can optionally use to help train your model.
 
-## Details About Files In This Directory
+## Rubric Points
+### Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/432/view) individually and describe how I addressed each point in my implementation.  
 
-### `drive.py`
+---
+### Files Submitted & Code Quality
 
-Usage of `drive.py` requires you have saved the trained model as an h5 file, i.e. `model.h5`. See the [Keras documentation](https://keras.io/getting-started/faq/#how-can-i-save-a-keras-model) for how to create this file using the following command:
-```sh
-model.save(filepath)
+#### Submission includes all required files and can be used to run the simulator in autonomous mode
+
+My project includes the following files:
+* model.py containing the script to create and train the model
+* drive.py for driving the car in autonomous mode
+* model.h5 containing a trained convolution neural network 
+* writeup_report.md summarizing the results
+* video.mp4
+
+
+
+
+### Data collection and balancing
+
+#### 1. I have tried various data set: 
+1. Self-collected data from simulator 
+2. Default data from Udacity
+3. Recovery data from road edge to road center turn.
+4. Zigzag running data
+
+However, among all these data, only Default data from Udacity worked well. I think it is the reason that the data was collected in joystick. By keyborads it is very diffculty to collect high quality data with continuous steering angle changing data. This experience has taught me that a good quality data makes difference in the deep learning model performance. 
+
+#### 2. Label distribution
+
+The first thing to analyze is to check the label distribution. In the deep learning model the steering angles are the label that need to be learnt from the data. After drawing the histogram of steering angles distributions below, we can see that there zero angle consist most of the data. 
+
+
+* The histogram of the original data
+
+![alt text][image12]  
+* The samples from the original data
+
+![alt text][image8]  
+
+
+#### 3. Data balancing
+
+We balance the data by randomly picking up 25% of the those data that the angles are zero. In the experiment, we see that with too many portion of zero angle steering data, the car are more likely to run stright. And the balanced data plays an important role in predicting the steering angle in the later on model training. The following function does the balancing:
+
+```python
+def collect_data(path):
+    lines=[]
+    drive_log_path = path + "driving_log.csv"
+    data_path = path + "IMG/"
+    with open(drive_log_path) as csvfile:
+        reader=csv.reader(csvfile)
+        next(csvfile)
+        for line in reader:
+            lines.append(line)
+    for line in lines:
+        if float(line[3]) != 0:
+            image_process(line,data_path)       
+        else:
+            prob = np.random.uniform()
+            if prob <= 0.25: #adjust the ratio to balance the data
+                image_process(line,data_path)
 ```
 
-Once the model has been saved, it can be used with drive.py using this command:
 
-```sh
-python drive.py model.h5
+### Image processing
+
+1. In this project, I have done several image processing, such as 
+2. Image crop: to get rid of redundant information like trees, sky and front of car body
+3. Image resize: to fit into the deep learning model designed by Nvidia
+4. Image flip: To balance the turning right data
+5. Image color channel change: to standout the lane in the image.
+
+
+* Image crop
+![alt text][image6]  
+* Image resize to 64x64x3      
+![alt text][image7]  
+* Color channel change from RGB to YUV
+![alt text][image9]  
+* Image flip, in the same time reverse the sign of associated angle.
+![alt text][image10]  
+
+After we the image process, we are able to balance the data with a balanced steering angles set
+
+* Blances data
+![alt text][image11]  
+
+
+
+### Deep model construction
+
+I tested NVIDIA  architecture but I did not do the normalization part for the data but it went well. I used keras API to build the model, compared to tensorflow we used in the previous section, keras API is much more easy to handle and easy to check the input-output parameters
+
+
+```python
+model = Sequential()
+model.add(Lambda(lambda x: x, input_shape=(64, 64, 3)))
+model.add(Convolution2D(32, 3, 3, border_mode='same', subsample=(2, 2), activation='relu', name='Conv1'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
+model.add(Convolution2D(64, 3, 3, border_mode='same', subsample=(2, 2), activation='relu', name='Conv2'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
+model.add(Convolution2D(128, 3, 3, border_mode='same', subsample=(1, 1), activation='relu', name='Conv3'))
+model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
+model.add(Convolution2D(128, 2, 2, border_mode='same', subsample=(1, 1), activation='relu', name='Conv4'))
+model.add(Flatten())
+model.add(Dropout(0.2))
+model.add(Dense(128, activation='relu', name='FC1'))
+model.add(Dropout(0.5))
+model.add(Dense(128, activation='relu', name='FC2'))
+model.add(Dropout(0.5))
+model.add(Dense(64, activation='relu', name='FC3'))
+model.add(Dense(1))
 ```
-
-The above command will load the trained model and use the model to make predictions on individual images in real-time and send the predicted angle back to the server via a websocket connection.
-
-Note: There is known local system's setting issue with replacing "," with "." when using drive.py. When this happens it can make predicted steering values clipped to max/min values. If this occurs, a known fix for this is to add "export LANG=en_US.utf8" to the bashrc file.
-
-#### Saving a video of the autonomous agent
-
-```sh
-python drive.py model.h5 run1
+In the above layers, dropout layer plays an important role in proventing the model to be overfitting. 
+Besides the layers, I use Adam optimizer
+```python
+adam = Adam(lr=1e-4, beta_1=0.9, beta_2=0.999, epsilon=1e-08, decay=0.0)
+model.compile(loss='mse',optimizer='adam')
 ```
+In order to save the memory and train the model faster, I use ``fit_generator`` API to iterate the data within a batch size. With its help my training time reduces a lot. 
 
-The fourth argument, `run1`, is the directory in which to save the images seen by the agent. If the directory already exists, it'll be overwritten.
+#### Parameters that to be fine-tuned are shown in the following table
 
-```sh
-ls run1
+After tried many times of fine-tuning the following two parameter, I found that with 9 Epochs and 64 batch size the model could be successful.
 
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_424.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_451.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_477.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_528.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_573.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_618.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_697.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_723.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_749.jpg
-[2017-01-09 16:10:23 EST]  12KiB 2017_01_09_21_10_23_817.jpg
-...
+
+| parameters       |    value  | 
+|:-------------:|:-------------:| 
+| Epochs     | 9     | 
+| Batch_size    | 64     | 
+
+At the end I will share the project video that needs to be submitted here.
+
+[![Click to check the project video](https://www.youtube.com/watch?v=XOdgMOJydZ8)](https://www.youtube.com/watch?v=XOdgMOJydZ8) 
+
+### Reflections
+As we can see from the video that the car was swinging in the road even though the car did not run out of the track. This is due to the right and left images data with correction on the steering angle that were used in the training. And I have tuned the correction value for many rounds and 0.25 was the value that makes the car run inside the lane but still now stable enough.  I have also spent more than two weeks to train the model and process the image under various method, like change the brightness change the size, but those only helps were presented above in this note. 
+
+Among all the 4 projects that I have done, this one is most challenging for me because I have failed many times in the big turn corner place where the car were always not able to turn big enough to stay inside the lane. But after many trials and errors, I am able to ensure the car runing insde the lane. Even though I am not very satisfied with the performance now but I have no other solutions for the moment now I will first submit first to wait for better suggested solutions. 
+
+
+
+
+```python
+
 ```
-
-The image file name is a timestamp of when the image was seen. This information is used by `video.py` to create a chronological video of the agent driving.
-
-### `video.py`
-
-```sh
-python video.py run1
-```
-
-Creates a video based on images found in the `run1` directory. The name of the video will be the name of the directory followed by `'.mp4'`, so, in this case the video will be `run1.mp4`.
-
-Optionally, one can specify the FPS (frames per second) of the video:
-
-```sh
-python video.py run1 --fps 48
-```
-
-Will run the video at 48 FPS. The default FPS is 60.
-
-#### Why create a video
-
-1. It's been noted the simulator might perform differently based on the hardware. So if your model drives succesfully on your machine it might not on another machine (your reviewer). Saving a video is a solid backup in case this happens.
-2. You could slightly alter the code in `drive.py` and/or `video.py` to create a video of what your model sees after the image is processed (may be helpful for debugging).
-
-### Tips
-- Please keep in mind that training images are loaded in BGR colorspace using cv2 while drive.py load images in RGB to predict the steering angles.
-
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
-
