@@ -20,7 +20,7 @@ sio = socketio.Server()
 app = Flask(__name__)
 model = None
 prev_image_array = None
-def resize_img(image):
+def crop_img(image):
     shape = image.shape
     #Cut off the sky from the original picture
     crop_up = shape[0]-100
@@ -32,6 +32,15 @@ def resize_img(image):
     dim= (64,64)
     image = cv2.resize(image,dim, interpolation = cv2.INTER_AREA)
     return image
+
+def rgb2yuv(image):
+    """
+    Convert the image from RGB to YUV (This is what the NVIDIA model does)
+    """
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
+
+    return image
+
 
 class SimplePIController:
     def __init__(self, Kp, Ki):
@@ -55,7 +64,7 @@ class SimplePIController:
 
 
 controller = SimplePIController(0.1, 0.002)
-set_speed = 20
+set_speed = 22
 controller.set_desired(set_speed)
 
 
@@ -70,10 +79,13 @@ def telemetry(sid, data):
         speed = data["speed"]
         # The current image from the center camera of the car
         imgString = data["image"]
+
         image = Image.open(BytesIO(base64.b64decode(imgString)))
         
+        
         image_array = np.asarray(image)
-        image_array = resize_img(image_array)
+#         image_array = rgb2yuv(image_array)
+        image_array = crop_img(image_array)
         transformed_image_array = image_array[None, :, :, :]
         
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
