@@ -47,10 +47,11 @@ def rgb2yuv(image):
     return image
 
 def image_process(line, data_path):
+    thresh = (40, 255)
 
     steering_center = float(line[3])
     # create adjusted steering measurements for the side camera images
-    correction = 0.25# this is a parameter to tune
+    correction = 0.22# this is a parameter to tune
     steering_left = steering_center + correction
     steering_right = steering_center - correction
     
@@ -71,26 +72,69 @@ def image_process(line, data_path):
 
     # generate a flipped image
     augmented_images2= cv2.flip(image_center,1)
-    augmented_images2= resize_img(augmented_images2)
+    augmented_images2 = resize_img(augmented_images2)
+    hls = cv2.cvtColor(augmented_images2, cv2.COLOR_RGB2HLS)
+    S = hls[:,:,2]
+    augmented_images2 = np.zeros_like(S)
+    augmented_images2[(S > thresh[0]) & (S <= thresh[1])] = 1
+    arr1 = np.zeros(64*64)
+    arr1= arr1.reshape((64,64))
+    arr2 =  np.zeros(64*64)
+    arr2= arr2.reshape((64,64))
+    augmented_images2=augmented_images2*255
+    augmented_images2=np.stack((augmented_images2,arr1,arr2),axis=2)
+
+
     augmented_angle = steering_center*-1.0
     
     # transfer center image to YUV channel, crop and resize
-    image_center2 = rgb2yuv(image_center)
-    image_center2 = resize_img(image_center2)
+    # image_center2 = rgb2yuv(image_center)
+    image_center2 = resize_img(image_center)
+    hls = cv2.cvtColor(image_center2, cv2.COLOR_RGB2HLS)
+    S = hls[:,:,2]
+    image_center2 = np.zeros_like(S)
+    image_center2[(S > thresh[0]) & (S <= thresh[1])] = 1
+    arr1 = np.zeros(64*64)
+    arr1= arr1.reshape((64,64))
+    arr2 =  np.zeros(64*64)
+    arr2= arr2.reshape((64,64))
+    image_center2=image_center2*255
+    image_center2=np.stack((image_center2,arr1,arr2),axis=2)
+
+
 
     
     # transfer left image to YUV channel, crop and resize
     image_left = cv2.imread(current_path_left)
-    image_left2 = rgb2yuv(image_left)
-    image_left2 = resize_img(image_left2)
+    # image_left2 = rgb2yuv(image_left)
+    image_left2 = resize_img(image_left)
+    hls = cv2.cvtColor(image_left2, cv2.COLOR_RGB2HLS)
+    S = hls[:,:,2]
+    image_left2 = np.zeros_like(S)
+    image_left2[(S > thresh[0]) & (S <= thresh[1])] = 1
+    arr1 = np.zeros(64*64)
+    arr1= arr1.reshape((64,64))
+    arr2 =  np.zeros(64*64)
+    arr2= arr2.reshape((64,64))
+    image_left2=image_left2*255
+    image_left2=np.stack((image_left2,arr1,arr2),axis=2)
 
 
     # transfer right image to YUV channel, crop and resize
     image_right = cv2.imread(current_path_right)
-    image_right2 = rgb2yuv(image_right)
-    image_right2 = resize_img(image_right2)
+    # image_right2 = rgb2yuv(image_right)
+    image_right2 = resize_img(image_right)
 
-
+    hls = cv2.cvtColor(image_right2, cv2.COLOR_RGB2HLS)
+    S = hls[:,:,2]
+    image_right2 = np.zeros_like(S)
+    image_right2[(S > thresh[0]) & (S <= thresh[1])] = 1
+    arr1 = np.zeros(64*64)
+    arr1= arr1.reshape((64,64))
+    arr2 =  np.zeros(64*64)
+    arr2= arr2.reshape((64,64))
+    image_right2=image_right2*255
+    image_right2=np.stack((image_right2,arr1,arr2),axis=2)
     
     # save the processed image data with balance
     car_images.append(image_center2)
@@ -198,7 +242,7 @@ print("start to train ....")
 time.sleep(2.4)
 
 model = Sequential()
-model.add(Lambda(lambda x: x, input_shape=(64, 64, 3)))
+model.add(Lambda(lambda x: (x/127.5) -1.0, input_shape=(64, 64, 3)))
 model.add(Convolution2D(32, 3, 3, border_mode='same', subsample=(2, 2), activation='relu', name='Conv1'))
 model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
 model.add(Convolution2D(64, 3, 3, border_mode='same', subsample=(2, 2), activation='relu', name='Conv2'))

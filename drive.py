@@ -86,6 +86,21 @@ def telemetry(sid, data):
         image_array = np.asarray(image)
 #         image_array = rgb2yuv(image_array)
         image_array = crop_img(image_array)
+
+        hls = cv2.cvtColor(image_array, cv2.COLOR_RGB2HLS)
+        S = hls[:,:,2]
+        image_array = np.zeros_like(S)
+        thresh = (40, 255)
+        image_array[(S > thresh[0]) & (S <= thresh[1])] = 1
+
+        arr1 = np.zeros(64*64)
+        arr1= arr1.reshape((64,64))
+        arr2 =  np.zeros(64*64)
+        arr2= arr2.reshape((64,64))
+        image_array=image_array*255
+
+        image_array=np.stack((image_array,arr1,arr2),axis=2)
+
         transformed_image_array = image_array[None, :, :, :]
         
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
