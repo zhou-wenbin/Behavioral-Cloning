@@ -31,6 +31,13 @@ The goals / steps of this project are the following:
 [image10]: ./output_images/flip.png
 [image11]: ./output_images/his_blance.png
 [image12]: ./output_images/his.png
+[image13]: ./output_images/histogram0.15.png
+[image14]: ./output_images/HLSchannle.png
+[image15]: ./output_images/s_channle.png
+[image16]: ./output_images/s_channel.png
+[image17]: ./output_images/s_processed.png
+
+
 
 
 
@@ -77,7 +84,7 @@ The first thing to analyze is to check the label distribution. In the deep learn
 
 #### 3. Data balancing
 
-We balance the data by randomly picking up 25% of the those data that the angles are zero. In the experiment, we see that with too many portion of zero angle steering data, the car are more likely to run stright. And the balanced data plays an important role in predicting the steering angle in the later on model training. The following function does the balancing:
+We balance the data by randomly picking up 15% of the those data that the angles are zero. In the experiment, we see that with too many portion of zero angle steering data, the car are more likely to run stright. And the balanced data plays an important role in predicting the steering angle in the later on model training. The following function does the balancing:
 
 ```python
 def collect_data(path):
@@ -94,7 +101,7 @@ def collect_data(path):
             image_process(line,data_path)       
         else:
             prob = np.random.uniform()
-            if prob <= 0.25: #adjust the ratio to balance the data
+            if prob <= 0.15: #adjust the ratio to balance the data
                 image_process(line,data_path)
 ```
 
@@ -110,17 +117,35 @@ def collect_data(path):
 
 * Image crop
 ![alt text][image6]  
+
 * Image resize to 64x64x3      
 ![alt text][image7]  
-* Color channel change from RGB to YUV
-![alt text][image9]  
+
+* Color channel change from RGB to HLS and show S channel (inspired by image segmentation)
+![alt text][image16]  
+
+
+* Process the S channel and thresh needs fine-tuning
+```python
+thresh = (40, 255)
+hls = cv2.cvtColor(img, cv2.COLOR_RGB2HLS)
+S= hls[:,:,2]
+binary = np.zeros_like(S)
+binary[(S > thresh[0]) & (S <= thresh[1])] = 1
+plt.imshow(binary)
+```
+![alt text][image17]  
+
+After fine-tuning the s channel to make the road lane standout in the image, we pad processed s channel with two other channels with zeros to make sure the image is 64x64x3, it looks like the following:
+![alt text][image14]  
+
 * Image flip, in the same time reverse the sign of associated angle.
 ![alt text][image10]  
 
 After we the image process, we are able to balance the data with a balanced steering angles set
 
 * Blances data
-![alt text][image11]  
+![alt text][image13]  
 
 
 
@@ -131,7 +156,7 @@ I tested NVIDIA  architecture but I did not do the normalization part for the da
 
 ```python
 model = Sequential()
-model.add(Lambda(lambda x: x, input_shape=(64, 64, 3)))
+model.add(Lambda(lambda x: (x/127.5) -1.0, input_shape=(64, 64, 3)))
 model.add(Convolution2D(32, 3, 3, border_mode='same', subsample=(2, 2), activation='relu', name='Conv1'))
 model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
 model.add(Convolution2D(64, 3, 3, border_mode='same', subsample=(2, 2), activation='relu', name='Conv2'))
@@ -139,6 +164,7 @@ model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
 model.add(Convolution2D(128, 3, 3, border_mode='same', subsample=(1, 1), activation='relu', name='Conv3'))
 model.add(MaxPooling2D(pool_size=(2, 2), strides=None, border_mode='same'))
 model.add(Convolution2D(128, 2, 2, border_mode='same', subsample=(1, 1), activation='relu', name='Conv4'))
+
 model.add(Flatten())
 model.add(Dropout(0.2))
 model.add(Dense(128, activation='relu', name='FC1'))
@@ -168,12 +194,14 @@ After tried many times of fine-tuning the following two parameter, I found that 
 
 At the end I will share the project video that needs to be submitted here.
 
-[![Click to check the project video](https://www.youtube.com/watch?v=XOdgMOJydZ8)](https://www.youtube.com/watch?v=XOdgMOJydZ8) 
+[![Click to check the project video](https://youtu.be/bSUrWfuB280)](https://youtu.be/bSUrWfuB280) 
 
 ### Reflections
-As we can see from the video that the car was swinging in the road even though the car did not run out of the track. This is due to the right and left images data with correction on the steering angle that were used in the training. And I have tuned the correction value for many rounds and 0.25 was the value that makes the car run inside the lane but still now stable enough.  I have also spent more than two weeks to train the model and process the image under various method, like change the brightness change the size, but those only helps were presented above in this note. 
+As we can see from the video that the car was swinging in the road even though the car did not run out of the track. This is due to the right and left images data with correction on the steering angle that were used in the training. And I have tuned the correction value for many rounds and 0.15 was the value that makes the car run inside the lane but still now stable enough.  I have also spent more than two weeks to train the model and process the image under various method, like change the brightness change the size, but those only helps were presented above in this note. 
 
 Among all the 4 projects that I have done, this one is most challenging for me because I have failed many times in the big turn corner place where the car were always not able to turn big enough to stay inside the lane. But after many trials and errors, I am able to ensure the car runing insde the lane. Even though I am not very satisfied with the performance now but I have no other solutions for the moment now I will first submit first to wait for better suggested solutions. 
+
+In the modified version, I processed the image in HLS channel, which I learnt during the project for advanced lane detection.
 
 
 
