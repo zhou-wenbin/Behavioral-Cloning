@@ -77,6 +77,7 @@ The first thing to analyze is to check the label distribution. In the deep learn
 * The histogram of the original data
 
 ![alt text][image12]  
+
 * The samples from the original data
 
 ![alt text][image8]  
@@ -116,12 +117,15 @@ def collect_data(path):
 
 
 * Image crop
+
 ![alt text][image6]  
 
-* Image resize to 64x64x3      
+* Image resize to 64x64x3 
+
 ![alt text][image7]  
 
 * Color channel change from RGB to HLS and show S channel (inspired by image segmentation)
+
 ![alt text][image16]  
 
 
@@ -134,17 +138,21 @@ binary = np.zeros_like(S)
 binary[(S > thresh[0]) & (S <= thresh[1])] = 1
 plt.imshow(binary)
 ```
+
 ![alt text][image17]  
 
 After fine-tuning the s channel to make the road lane standout in the image, we pad processed s channel with two other channels with zeros to make sure the image is 64x64x3, it looks like the following:
+
 ![alt text][image14]  
 
 * Image flip, in the same time reverse the sign of associated angle.
+
 ![alt text][image10]  
 
 After we the image process, we are able to balance the data with a balanced steering angles set
 
 * Blances data
+
 ![alt text][image13]  
 
 
