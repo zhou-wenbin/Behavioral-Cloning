@@ -38,13 +38,13 @@ def resize_img(image):
     image = cv2.resize(image,dim, interpolation = cv2.INTER_AREA)
     return image
 
-def rgb2yuv(image):
-    """
-    Convert the image from RGB to YUV (This is what the NVIDIA model does)
-    """
-    image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
+# def rgb2yuv(image):
+#     """
+#     Convert the image from RGB to YUV (This is what the NVIDIA model does)
+#     """
+#     image = cv2.cvtColor(image, cv2.COLOR_RGB2YUV)
 
-    return image
+#     return image
 
 def image_process(line, data_path):
     thresh = (40, 255)
