@@ -211,6 +211,9 @@ Among all the 4 projects that I have done, this one is most challenging for me b
 
 In the modified version, I processed the image in HLS channel, which I learnt during the project for advanced lane detection.
 
+Comments: after reading the suggested post about how other students finished this project, I realized that good quality of data is very important for the success of this project. In mt work, I did not use too much data, but I did something similiar to image segmentation (by apply S channel of a HLS image). And after image process, I am only left with image such that road is in one color and others in another color. Since the important information for the car to learn is the track lane and the steering angle. So anything else would be redundant information. However, the way to process the image is not robust in term of the envronment change of the road. This might be the drawbacks. 
+
+
 
 
 
