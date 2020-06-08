@@ -73,6 +73,9 @@ def image_process(line, data_path):
     # generate a flipped image
     augmented_images2= cv2.flip(image_center,1)
     augmented_images2 = resize_img(augmented_images2)
+    
+    # use s channel of a HLS image to process the image. after processing
+    # we are left with only road information and other information.
     hls = cv2.cvtColor(augmented_images2, cv2.COLOR_RGB2HLS)
     S = hls[:,:,2]
     augmented_images2 = np.zeros_like(S)
